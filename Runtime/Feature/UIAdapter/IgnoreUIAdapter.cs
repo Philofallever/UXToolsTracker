@@ -5,6 +5,9 @@ using UnityEngine;
 public class IgnoreUIAdapter : MonoBehaviour
 {
     public UIAdapter UIScreenAdapter;
+
+    public bool fillAllScreen;
+
     RectTransform rectTrans;
     Rect LastSafeArea = new Rect(0, 0, 0, 0);
 
@@ -19,9 +22,81 @@ public class IgnoreUIAdapter : MonoBehaviour
     void Start()
     {
         Refresh();
+        #if UNITY_2021_2_OR_NEWER
+#if UNITY_EDITOR
+        if (!UIDeviceSimulatorChangeController.IgnoreUIAdapters.Contains(this))
+            UIDeviceSimulatorChangeController.IgnoreUIAdapters.Add(this);
+#endif
+#endif
+    }
+
+    void OnDestroy(){
+#if UNITY_EDITOR
+#if UNITY_2021_2_OR_NEWER
+        if(UIDeviceSimulatorChangeController.IgnoreUIAdapters.Contains(this))
+            UIDeviceSimulatorChangeController.IgnoreUIAdapters.Remove(this);
+#endif
+#endif
     }
 
     public void Refresh()
+    {
+        if (fillAllScreen)
+        {
+            FillScreen();
+        }
+        else
+        {
+            RefreshArea();
+        }
+    }
+
+    public void FillScreen()
+    {
+        rectTrans = GetComponent<RectTransform>();
+        if (UIScreenAdapter == null)
+        {
+            UIScreenAdapter = GetComponentInParent<UIAdapter>();
+        }
+
+        if (UIScreenAdapter == null || rectTrans == null)
+        {
+            return;
+        }
+
+        RectTransform parentTrans = rectTrans.parent as RectTransform;
+        if (parentTrans == null)
+        {
+            return;
+        }
+
+        bool needResetParentScale = false;
+        if (parentTrans.localScale == Vector3.zero)
+        {
+            needResetParentScale = true;
+            parentTrans.localScale = Vector3.one;
+        }
+
+        RectTransform safeAreaRectTrans = UIScreenAdapter.GetComponent<RectTransform>();
+        if (safeAreaRectTrans == null)
+        {
+            return;
+        }
+        RectTransform safeParentRectTrans = safeAreaRectTrans.parent.GetComponent<RectTransform>();
+        if (safeParentRectTrans == null)
+        {
+            return;
+        }
+
+        rectTrans.sizeDelta = safeParentRectTrans.sizeDelta;
+        Vector2 middle = new Vector2(0.5f, 0.5f);
+
+        rectTrans.anchorMin = middle;
+        rectTrans.anchorMax = middle;
+        rectTrans.position = safeParentRectTrans.position;
+    }
+
+    public void RefreshArea()
     {
         Rect safeArea = UIAdapter.GetSafeArea();
         if (safeArea == LastSafeArea) return;
@@ -43,6 +118,13 @@ public class IgnoreUIAdapter : MonoBehaviour
         if (parentTrans == null)
         {
             return;
+        }
+
+        bool needResetParentScale = false;
+        if(parentTrans.localScale == Vector3.zero)
+        {
+            needResetParentScale = true;
+            parentTrans.localScale = Vector3.one;
         }
 
         RectTransform safeAreaRectTrans = UIScreenAdapter.GetComponent<RectTransform>();
@@ -94,6 +176,13 @@ public class IgnoreUIAdapter : MonoBehaviour
 
         rectTrans.anchorMin += anchorMinOffset;
         rectTrans.anchorMax += anchorMaxOffset;
+
+
+        if (needResetParentScale)
+        {
+            parentTrans.localScale = Vector3.zero;
+        }
+
         Debug.Log($"UXTool UIAdapter Ignore {gameObject.name} anchor: {rectTrans.anchorMin.x} {rectTrans.anchorMax.x}");
         UnityEngine.Profiling.Profiler.EndSample();
     }

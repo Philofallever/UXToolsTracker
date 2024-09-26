@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using UnityEngine.Rendering;
 
 namespace UnityEngine.UI
 {
@@ -90,15 +91,27 @@ namespace UnityEngine.UI
         private bool m_EnableGrey;
         [SerializeField]
         private bool m_EnableRadiusCorner;
+        [SerializeField]
+        private bool m_EnableDistortion;
 
         //Grey Params
         [SerializeField]
         private float m_Contrast = 1;
-        [SerializeField]   
+        [SerializeField]
         private float m_Saturation = 0;
 
         //RadiusCorner Params
         public Vector4 m_CornerRadius = new Vector4(10f, 10f, 10f, 10f);
+
+        //Distortion Params
+        [SerializeField]
+        private Vector2 m_BottomLeftDistortion = Vector2.zero;
+        [SerializeField]
+        private Vector2 m_BottomRightDistortion = Vector2.right;
+        [SerializeField]
+        private Vector2 m_TopLeftDistortion = Vector2.up;
+        [SerializeField]
+        private Vector2 m_TopRightDistortion = Vector2.one;
 
         // Vector2.right rotated clockwise by 45 degrees
         private static readonly Vector2 wNorm = new Vector2(.7071068f, -.7071068f);
@@ -122,6 +135,10 @@ namespace UnityEngine.UI
         private static readonly int prop_radiuses = Shader.PropertyToID("_r");
         private static readonly int prop_rect2props = Shader.PropertyToID("_rect2props");
 
+        private static readonly int Distortion = Shader.PropertyToID("_Distortion");
+        private static readonly int BottomDistortion = Shader.PropertyToID("_BottomDistortion");
+        private static readonly int TopDistortion = Shader.PropertyToID("_TopDistortion");
+
         public void InitMaterial()
         {
             if (material == null || material.name == "Default UI Material")
@@ -129,7 +146,7 @@ namespace UnityEngine.UI
                 //没有手动设置过Material的都设置成UXImage
                 if (Application.isPlaying)
                 {
-                    if (m_LinearToGamma || m_GammaToLinear || m_EnableGrey || m_EnableRadiusCorner)
+                    if (m_LinearToGamma || m_GammaToLinear || m_EnableGrey || m_EnableRadiusCorner || m_EnableDistortion)
                     {
                         SetInstanceMaterial();
                     }
@@ -185,7 +202,7 @@ namespace UnityEngine.UI
 
                     materialForRendering.SetVector("_AtlasPosition", result);
                     materialForRendering.SetFloat("_hasTex", 1);
-                    
+
                 }
                 else
                 {
@@ -240,7 +257,7 @@ namespace UnityEngine.UI
         {
             if (m_MatType == MaterialType.OtherMat) return;
             m_EnableGrey = bGrey;
-            if(m_MatType == MaterialType.StaticUXImageMat)
+            if (m_MatType == MaterialType.StaticUXImageMat)
             {
                 SetInstanceMaterial();
             }
@@ -637,7 +654,7 @@ namespace UnityEngine.UI
             */
         }
 
-#region Flip 
+        #region Flip 
         private FlipPart GetFlipPart(int index, int vertCount)
         {
             switch (flipDirection)
@@ -696,6 +713,10 @@ namespace UnityEngine.UI
         }
         public void RemapVertex(ref UIVertex vertex, FlipMode flipMode, float Min1, float Max1, float Min2, float Max2)
         {
+            if(Min1 == Max1)
+            {
+                return;
+            }
             Vector2 position = vertex.position;
             float k = (Min2 - Max2) / (Min1 - Max1);
             float b = Min2 - Min1 * k;
@@ -912,9 +933,9 @@ namespace UnityEngine.UI
             AddQuad(vh, new Vector2(v.x, v.y), new Vector2(v.z, v.w), color, new Vector2(uv.x, uv.y), new Vector2(uv.z, uv.w), Vector2.zero, Vector2.one);
         }
 
-#endregion
+        #endregion
 
-#region  gradient
+        #region  gradient
         public class Vert2D   //描述alphakey和colorkey的类
         {
             public Vector3 position = default;
@@ -1446,6 +1467,25 @@ namespace UnityEngine.UI
 
                 //根据gradient的值，赋color
 
+            }
+
+            if (m_EnableDistortion != materialForRendering.IsKeywordEnabled("DISTORTION"))
+            {
+                if (m_EnableDistortion)
+                {
+                    materialForRendering.SetFloat(Distortion, 1);
+                    materialForRendering.EnableKeyword("DISTORTION");
+                }
+                else
+                {
+                    materialForRendering.SetFloat(Distortion, 0);
+                    materialForRendering.DisableKeyword("DISTORTION");
+                }
+            }
+            if (m_EnableDistortion)
+            {
+                materialForRendering.SetVector(BottomDistortion, new Vector4(m_BottomLeftDistortion.x, m_BottomLeftDistortion.y, m_BottomRightDistortion.x, m_BottomRightDistortion.y));
+                materialForRendering.SetVector(TopDistortion, new Vector4(m_TopRightDistortion.x, m_TopRightDistortion.y, m_TopLeftDistortion.x, m_TopLeftDistortion.y));
             }
         }
 
@@ -2843,8 +2883,60 @@ namespace UnityEngine.UI
                 }
             }
         }
+        public override Material GetModifiedMaterial(Material baseMaterial)
+        {
+            var toUse = baseMaterial;
 
-#endregion
+            if (m_ShouldRecalculateStencil)
+            {
+                if (maskable)
+                {
+                    var rootCanvas = MaskUtilities.FindRootSortOverrideCanvas(transform);
+                    m_StencilValue = MaskUtilities.GetStencilDepth(transform, rootCanvas);
+                }
+                else
+                    m_StencilValue = 0;
+
+                m_ShouldRecalculateStencil = false;
+            }
+
+            // if we have a enabled Mask component then it will
+            // generate the mask material. This is an optimization
+            // it adds some coupling between components though :(
+            if (m_StencilValue > 0 && !isMaskingGraphic)
+            {
+                var t = GetComponentInParent<UXMask>();
+                Material maskMat;
+                if (m_StencilValue == 1)
+                {
+                    if (t != null && t.IsReverseMask)
+                    {
+                        maskMat = StencilMaterial.Add(toUse, (1 << m_StencilValue) - 1, StencilOp.Keep, CompareFunction.NotEqual, ColorWriteMask.All, (1 << m_StencilValue) - 1, 0);
+                    }
+                    else
+                    {
+                        maskMat = StencilMaterial.Add(toUse, (1 << m_StencilValue) - 1, StencilOp.Keep, CompareFunction.Equal, ColorWriteMask.All, (1 << m_StencilValue) - 1, 0);
+                    }
+                }
+                else
+                {
+                    if (t != null && t.IsReverseMask)
+                    {
+                        maskMat = StencilMaterial.Add(toUse, 1, StencilOp.Keep, CompareFunction.Greater, ColorWriteMask.All, (1 << m_StencilValue) - 1, 0);
+                    }
+                    else
+                    {
+                        maskMat = StencilMaterial.Add(toUse, (1 << m_StencilValue) - 1, StencilOp.Keep, CompareFunction.Equal, ColorWriteMask.All, (1 << m_StencilValue) - 1, 0);
+                    }
+                }
+                StencilMaterial.Remove(m_MaskMaterial);
+                m_MaskMaterial = maskMat;
+                toUse = m_MaskMaterial;
+            }
+            return toUse;
+        }
+
+        #endregion
     }
 
 }

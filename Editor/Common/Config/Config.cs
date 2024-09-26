@@ -15,6 +15,9 @@ namespace ThunderFireUITool
         public static readonly string AssetsRootPath = "Assets/UXTools/Res/";
         public static readonly string ToolsRootPath = "Assets/UXTools/Editor/";
 
+        public static readonly string AutoAssembleToolZipPath = "Assets/UXTools/3rdTools/AutoAssembleTool.zip";
+        public static readonly string AutoAssembleToolPath = "Assets/UXTools/3rdTools/AutoAssembleTool.exe";
+
         //L22
         //public static readonly string RootPath = "Assets/Editor/editor_ui/UXTools/Res/";
 

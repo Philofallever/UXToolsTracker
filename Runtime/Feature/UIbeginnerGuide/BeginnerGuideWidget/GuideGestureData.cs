@@ -72,7 +72,7 @@ public class GuideGestureData : GuideWidgetData
 
     public void EditorInit()
     {
-        if(gestureType== GestureType.ThumbDrag||gestureType==GestureType.ForeFingerDrag)
+        if (gestureType == GestureType.ThumbDrag || gestureType == GestureType.ForeFingerDrag)
         {
             ShowDragEditorController();
         }

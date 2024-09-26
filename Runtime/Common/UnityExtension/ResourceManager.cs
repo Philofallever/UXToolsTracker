@@ -11,7 +11,7 @@ public class ResourceManager
     /// <returns>资源</returns>
     public static T Load<T>(string path) where T : Object
     {
-        if(path == null) return null;
+        if (path == null) return null;
         int index = path.IndexOf("/Resources/");
         return Resources.Load<T>(Path.ChangeExtension(index == -1 ? path : path.Substring(index + 11), null));
     }

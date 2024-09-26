@@ -37,6 +37,10 @@ Shader "UX/UXImage"
         _rect2props ("rect2props", Vector) = (0,0,0,0)
         _AtlasPosition("atlasUVRect", vector) = (0,0,1,1)
         _hasTex ("has Tex", Float) = 1
+
+        [Toggle(DISTORTION)] _Distortion ("Distortion", Float) = 0
+        _BottomDistortion ("BottomDistortion", Vector) = (0,0,1,0)
+        _TopDistortion ("TopDistortion", Vector) = (1,1,0,1)
     }
 
     SubShader
@@ -86,6 +90,7 @@ Shader "UX/UXImage"
             #pragma multi_compile_local _ GAMMA_TO_LINEAR
             #pragma multi_compile_local _ ENABLE_GREY
             #pragma multi_compile_local _ RADIUS_CORNER
+            #pragma multi_compile_local _ DISTORTION
             
             struct appdata_t
             {
@@ -119,6 +124,8 @@ Shader "UX/UXImage"
             float4 _rect2props;
             float4 _AtlasPosition;
             float _hasTex;
+            float4 _BottomDistortion;
+            float4 _TopDistortion;
 
             inline float2 NormalizeAtlasSpriteUV(float2 uv)
             {
@@ -161,6 +168,42 @@ Shader "UX/UXImage"
                 const half alphaPrecision = half(0xff);
                 const half invAlphaPrecision = half(1.0/alphaPrecision);
                 IN.color.a = round(IN.color.a * alphaPrecision)*invAlphaPrecision;
+
+                #ifdef DISTORTION
+                float dx1 = _BottomDistortion.z - _TopDistortion.x;
+                float dx2 = _TopDistortion.z - _TopDistortion.x;
+                float dx3 = _BottomDistortion.x - _BottomDistortion.z + _TopDistortion.x - _TopDistortion.z;
+                float dy1 = _BottomDistortion.w - _TopDistortion.y;
+                float dy2 = _TopDistortion.w - _TopDistortion.y;
+                float dy3 = _BottomDistortion.y - _BottomDistortion.w + _TopDistortion.y - _TopDistortion.w;
+                float denominator = dx1 * dy2 - dx2 * dy1;
+                float a13 = (dx3 * dy2 - dx2 * dy3) / denominator;
+                float a23 = (dx1 * dy3 - dx3 * dy1) / denominator;
+                float3x3 distortionMatrix = float3x3(
+                    _BottomDistortion.z - _BottomDistortion.x + a13 * _BottomDistortion.z,
+                    _BottomDistortion.w - _BottomDistortion.y + a13 * _BottomDistortion.w,
+                    a13,
+                    _TopDistortion.z - _BottomDistortion.x + a23 * _TopDistortion.z,
+                    _TopDistortion.w - _BottomDistortion.y + a23 * _TopDistortion.w,
+                    a23,
+                    _BottomDistortion.x,
+                    _BottomDistortion.y,
+                    1
+                );
+                distortionMatrix = float3x3(
+                    distortionMatrix[1][1] * distortionMatrix[2][2] - distortionMatrix[1][2] * distortionMatrix[2][1],
+                    distortionMatrix[0][2] * distortionMatrix[2][1] - distortionMatrix[0][1] * distortionMatrix[2][2],
+                    distortionMatrix[0][1] * distortionMatrix[1][2] - distortionMatrix[0][2] * distortionMatrix[1][1],
+                    distortionMatrix[1][2] * distortionMatrix[2][0] - distortionMatrix[1][0] * distortionMatrix[2][2],
+                    distortionMatrix[0][0] * distortionMatrix[2][2] - distortionMatrix[0][2] * distortionMatrix[2][0],
+                    distortionMatrix[0][2] * distortionMatrix[1][0] - distortionMatrix[0][0] * distortionMatrix[1][2],
+                    distortionMatrix[1][0] * distortionMatrix[2][1] - distortionMatrix[1][1] * distortionMatrix[2][0],
+                    distortionMatrix[0][1] * distortionMatrix[2][0] - distortionMatrix[0][0] * distortionMatrix[2][1],
+                    distortionMatrix[0][0] * distortionMatrix[1][1] - distortionMatrix[0][1] * distortionMatrix[1][0]
+                );
+                float3 distortionPos = mul(float3(IN.texcoord, 1), distortionMatrix);
+                IN.texcoord = float2(distortionPos.xy / distortionPos.z);
+                #endif
 
                 half4 color = IN.color * (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd);
 

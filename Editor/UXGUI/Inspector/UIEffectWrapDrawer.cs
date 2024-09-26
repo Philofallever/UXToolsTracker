@@ -35,7 +35,11 @@ namespace UnityEngine.UI
             }
             else if(targetType == EffectDrawerTargetType.UXText)
             {
-                hasOutline = go.HasComponent<Outline>();
+                hasOutline = false;
+                if(go.HasComponent<UXOutline>()){
+                    UXOutline us = go.TryGetComponent<UXOutline>();
+                    hasOutline = us.enabled;
+                }
             }
         }
 
@@ -97,7 +101,14 @@ namespace UnityEngine.UI
             }
             else if(targetType == EffectDrawerTargetType.UXText)
             {
-                target.TryAddComponent<Outline>();
+                UXOutline us = target.TryGetComponent<UXOutline>();
+                if (us != null)
+                {
+                    us.enabled = true;
+                }
+                else {
+                    target.TryAddComponent<UXOutline>();
+                }
             }
         }
         private static void RemoveOutLineComponent(GameObject target)
@@ -106,6 +117,11 @@ namespace UnityEngine.UI
             if (s != null)
             {
                 Object.DestroyImmediate(s);
+            }
+            UXOutline us = target.TryGetComponent<UXOutline>();
+            if (us != null)
+            {
+                us.enabled = false;
             }
         }
 

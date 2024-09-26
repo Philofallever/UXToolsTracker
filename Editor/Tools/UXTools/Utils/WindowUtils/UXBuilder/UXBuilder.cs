@@ -25,7 +25,7 @@ namespace ThunderFireUITool
         {
             return UXBuilderCheckBox.Create(v, s);
         }
-        
+
         public static UXBuilderSelect Select(VisualElement v, UXBuilderSelectStruct s)
         {
             return UXBuilderSelect.Create(v, s);
@@ -75,11 +75,17 @@ namespace ThunderFireUITool
         {
             return UXBuilderTabs.Create(v, s);
         }
-        
+
         public static UXBuilderDivider Divider(VisualElement v, UXBuilderDividerStruct s)
         {
             return UXBuilderDivider.Create(v, s);
         }
+#if UNITY_2022_3_OR_NEWER
+        public static UXBuilderMultiColumnTreeView MultiColumnTreeView<T>(VisualElement v, UXBuilderMultiColumnTreeViewStruct s, IList<TreeViewItemData<T>> itemDatas)
+        {
+            return UXBuilderMultiColumnTreeView.Create(v, s, itemDatas);
+        }
+#endif
 
     }
 }

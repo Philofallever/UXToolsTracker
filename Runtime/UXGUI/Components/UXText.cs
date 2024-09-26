@@ -52,7 +52,8 @@ namespace UnityEngine.UI
         /// </summary>
         [SerializeField]
         private string m_localizationID = "";
-        public string localizationID { 
+        public string localizationID
+        {
             get { return m_localizationID; }
             set { m_localizationID = value; }
         }
@@ -273,7 +274,7 @@ namespace UnityEngine.UI
             {
                 localeProcesser = LocaleProcesserFactory.Create(this);
             }
-            if(Application.isPlaying)
+            if (Application.isPlaying)
             {
                 //runtime修改Localization后Text参数
                 localeProcesser.ModifyLocaleTextSettings();
@@ -359,7 +360,7 @@ namespace UnityEngine.UI
                 {
                     RenderedText = needRenderderTxt.Substring(0, characterCountVisible - 1) + ELLIPSIS;
                 }
-                else if(this.ellipsType == TextEllipsisType.EllipsisOnLeft)
+                else if (this.ellipsType == TextEllipsisType.EllipsisOnLeft)
                 {
                     RenderedText = ELLIPSIS + needRenderderTxt.Substring(needRenderderTxt.Length - characterCountVisible - 1);
                 }

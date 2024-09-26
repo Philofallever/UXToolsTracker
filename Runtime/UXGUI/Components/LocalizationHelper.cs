@@ -91,7 +91,7 @@ public class LocalizationHelper
     public static LocalizationTextRow[] ReadFromJSON()
     {
         var json = ResourceManager.Load<TextAsset>(UXGUIConfig.TextLocalizationJsonPath);
-        if(json == null) return null;
+        if (json == null) return null;
         return JsonUtilityEx.FromJson<LocalizationTextRow>(json.text).ToArray();
     }
 

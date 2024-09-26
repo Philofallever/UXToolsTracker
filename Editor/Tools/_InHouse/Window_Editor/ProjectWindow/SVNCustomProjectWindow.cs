@@ -45,8 +45,10 @@ namespace ThunderFireUITool
             //         }
             //     }
             // }
-            foreach (string str in Selection.assetGUIDs){
-                if(str.Equals(guid)){
+            foreach (string str in Selection.assetGUIDs)
+            {
+                if (str.Equals(guid))
+                {
                     string path = AssetDatabase.GUIDToAssetPath(str);
                     bool isFolder = System.IO.Directory.Exists(path);
                     if (isFolder)
@@ -59,7 +61,7 @@ namespace ThunderFireUITool
                     }
                 }
             }
-            
+
         }
     }
 }

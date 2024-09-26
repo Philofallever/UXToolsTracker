@@ -92,20 +92,20 @@ namespace ThunderFireUITool
                 "IngameJumpball.prefab"
             };
 
-            List<string> guids= new List<string>();
+            List<string> guids = new List<string>();
             foreach (var name in prefabs)
             {
                 string path = prefabFolder + "/" + name;
                 string guid = AssetDatabase.AssetPathToGUID(path);
-                if(string.IsNullOrEmpty(guid))
+                if (string.IsNullOrEmpty(guid))
                 {
                     Debug.Log(name + "cant find");
                 }
                 guids.Add(guid);
             }
-            
-            
-            
+
+
+
             //string[] guids = AssetDatabase.FindAssets("t:Prefab", new string[] { prefabFolder });
             //string[] guids = new string[1] { "b0f539533ec302548bed31b2ca6eba29" };
             foreach (string guid in guids)
@@ -160,18 +160,18 @@ namespace ThunderFireUITool
             }
 
             //统计一下输出个log
-            List<List<Object>> atlasList =  resDatas.Select(resData => resData.atlasList).ToList();
+            List<List<Object>> atlasList = resDatas.Select(resData => resData.atlasList).ToList();
             HashSet<Object> atlasSet = new HashSet<Object>();
-            foreach(var list in atlasList)
+            foreach (var list in atlasList)
             {
-                foreach(var atlas in list)
+                foreach (var atlas in list)
                 {
                     atlasSet.Add(atlas);
                 }
             }
             List<string> atlasNames = atlasSet.Select(atlas => atlas.name).ToList();
             string log = string.Join("\n", atlasNames.ToArray());
-            Debug.Log("使用的Atlas: \n" + log );
+            Debug.Log("使用的Atlas: \n" + log);
         }
     }
 }

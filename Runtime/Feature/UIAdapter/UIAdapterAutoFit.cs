@@ -13,7 +13,7 @@ public class UIAdapterAutoFit : MonoBehaviour
 
     void CompareBorder(float selfRectValue, float canvasRectValue, ref float scale)
     {
-        if (selfRectValue < canvasRectValue)
+        if (selfRectValue < canvasRectValue && selfRectValue != 0)
         {
             float tmpScale = canvasRectValue / selfRectValue;
             if (scale < tmpScale)
@@ -51,21 +51,27 @@ public class UIAdapterAutoFit : MonoBehaviour
         float orginWidth = rectTrans.rect.width;
         float orginHeight = rectTrans.rect.height;
 
-        Vector2 anchor = new Vector2(0.5f, 0.5f);
+       Vector2 anchor = new Vector2(0.5f, 0.5f);
         rectTrans.anchorMin = anchor;
         rectTrans.anchorMax = anchor;
         Vector2 oldSelfLocalPos = rectTrans.localPosition;
         rectTrans.position = canvasRect.position;
-        //¼ÆËãÖÐÐÄµãµÄÆ«ÒÆ
+        //è®¡ç®—ä¸­å¿ƒç‚¹çš„åç§»
         float centerOffset_x = oldSelfLocalPos.x - rectTrans.localPosition.x;
+        float centerOffset_y = oldSelfLocalPos.y - rectTrans.localPosition.y;
         rectTrans.localPosition = oldSelfLocalPos;
 
         float scale = 1;
-        //ÓÒ±ß½ç
+        //å³è¾¹ç•Œ
         CompareBorder(orginWidth * (1 - rectTrans.pivot.x), canvasRect.rect.width / 2f - centerOffset_x, ref scale);
-        //×ó±ß½ç
+        //å·¦è¾¹ç•Œ
         CompareBorder(orginWidth * rectTrans.pivot.x, canvasRect.rect.width / 2f + centerOffset_x, ref scale);
-        rectTrans.sizeDelta = new Vector2(orginWidth * scale, orginHeight * scale);
+        //ä¸Šä¸‹è¾¹ç•Œ
+        CompareBorder(orginHeight * (1 - rectTrans.pivot.y), canvasRect.rect.height / 2f - centerOffset_y, ref scale);
+        CompareBorder(orginHeight * rectTrans.pivot.y, canvasRect.rect.height / 2f + centerOffset_y, ref scale);
+
+        rectTrans.sizeDelta = new Vector2(orginWidth * scale, orginHeight * scale);    
+
 
         //if (rectTrans.rect.width * rectTrans.lossyScale.x < canvasRect.rect.width * canvasRect.lossyScale.x)
         //{
